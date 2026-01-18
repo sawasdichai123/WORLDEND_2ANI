@@ -111,6 +111,7 @@ function ControlPanel({ isPlaying, setIsPlaying, videoElement }) {
   };
   const adjustVolume = (amount) => {
     if (videoElement) {
+      videoElement.muted = false; // Ensure unmuted when changing volume
       videoElement.volume = Math.max(0, Math.min(1, videoElement.volume + amount));
       console.log("Volume:", videoElement.volume);
     }
@@ -165,7 +166,7 @@ function ControlPanel({ isPlaying, setIsPlaying, videoElement }) {
         <ControlButton
           position={[0, 0, 0.04]}
           label={isPlaying ? "PAUSE" : "PLAY"}
-          onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying); }}
+          onClick={() => setIsPlaying(!isPlaying)}
           color={isPlaying ? "#ff3333" : "#00ffff"}
         />
 
@@ -203,7 +204,7 @@ function ControlPanel({ isPlaying, setIsPlaying, videoElement }) {
 
 function Stage({ isPlaying, setIsPlaying }) {
   // Lifted state: Load texture here
-  const texture = useVideoTexture("/assets/Mvtest.mp4", { start: false });
+  const texture = useVideoTexture("/assets/Mvtest.mp4", { start: false, muted: false });
 
   return (
     <group position={[0, 0, -28]}>
