@@ -199,7 +199,7 @@ function ControlPanel({ isPlaying, setIsPlaying, videoElement }) {
 
         {/* Glowing Rim */}
         <mesh>
-          <boxGeometry args={[2.02, 1.22, 0.04]} />
+          <boxGeometry args={[2.02, 1.42, 0.04]} />
           <meshBasicMaterial color="#00ffff" wireframe />
         </mesh>
 
