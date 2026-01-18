@@ -69,7 +69,7 @@ function VideoDisplay({ texture, isPlaying }) {
   }, [isPlaying, texture]);
 
   return (
-    <mesh rotation={[0, 0, 0]} position={[0, 5, 0]}>
+    <mesh>
       <planeGeometry args={[16, 9]} />
       <meshBasicMaterial map={texture} toneMapped={false} />
     </mesh>
@@ -277,18 +277,87 @@ function Stage({ isPlaying, setIsPlaying }) {
         <meshBasicMaterial color="#ff00ff" toneMapped={false} />
       </mesh>
 
-      {/* 2. Video Screen */}
-      <group position={[0, 5, -2]}>
-        {/* Black Frame */}
+      {/* 2. Video Screen with Metallic Frame & Speakers */}
+      <group position={[0, 6.5, -2]}>
+        {/* The Screen Itself */}
+        <VideoDisplay texture={texture} isPlaying={isPlaying} />
+
+        {/* --- FRAME STRUCTURE --- */}
+        {/* Top Bar */}
+        <mesh position={[0, 4.7, 0]}>
+          <boxGeometry args={[17, 0.4, 0.5]} />
+          <meshStandardMaterial color="#111" metalness={1.0} roughness={0.1} />
+        </mesh>
+
+        {/* Bottom Bar */}
+        <mesh position={[0, -4.7, 0]}>
+          <boxGeometry args={[17, 0.4, 0.5]} />
+          <meshStandardMaterial color="#111" metalness={1.0} roughness={0.1} />
+        </mesh>
+
+        {/* Left Vertical Frame */}
+        <mesh position={[-8.7, 0, 0]}>
+          <boxGeometry args={[0.4, 9.8, 0.5]} />
+          <meshStandardMaterial color="#111" metalness={1.0} roughness={0.1} />
+        </mesh>
+
+        {/* Right Vertical Frame */}
+        <mesh position={[8.7, 0, 0]}>
+          <boxGeometry args={[0.4, 9.8, 0.5]} />
+          <meshStandardMaterial color="#111" metalness={1.0} roughness={0.1} />
+        </mesh>
+
+        {/* --- SPEAKERS --- */}
+        {/* Left Speaker Column */}
+        <mesh position={[-11, 0, 0.2]}>
+          <boxGeometry args={[3, 9, 1]} />
+          <meshStandardMaterial color="#111" metalness={0.8} roughness={0.5} />
+        </mesh>
+        {/* Speaker Rings (Left = Cyan) */}
+        {[-3, -1, 1, 3].map((y, i) => (
+          <group key={i} position={[-11, y, 0.71]} rotation={[Math.PI / 2, 0, 0]}>
+            {/* Main Cone */}
+            <mesh>
+              <cylinderGeometry args={[1, 1, 0.1, 32]} />
+              <meshStandardMaterial color="#222" />
+            </mesh>
+            {/* Neon Ring */}
+            <mesh position={[0, 0.06, 0]} rotation={[Math.PI / 2, 0, 0]}>
+              <torusGeometry args={[0.8, 0.05, 16, 32]} />
+              <meshBasicMaterial color="#00ffff" toneMapped={false} />
+            </mesh>
+          </group>
+        ))}
+
+        {/* Right Speaker Column */}
+        <mesh position={[11, 0, 0.2]}>
+          <boxGeometry args={[3, 9, 1]} />
+          <meshStandardMaterial color="#111" metalness={0.8} roughness={0.5} />
+        </mesh>
+        {/* Speaker Rings (Right = Magenta) */}
+        {[-3, -1, 1, 3].map((y, i) => (
+          <group key={i} position={[11, y, 0.71]} rotation={[Math.PI / 2, 0, 0]}>
+            {/* Main Cone */}
+            <mesh>
+              <cylinderGeometry args={[1, 1, 0.1, 32]} />
+              <meshStandardMaterial color="#222" />
+            </mesh>
+            {/* Neon Ring */}
+            <mesh position={[0, 0.06, 0]} rotation={[Math.PI / 2, 0, 0]}>
+              <torusGeometry args={[0.8, 0.05, 16, 32]} />
+              <meshBasicMaterial color="#ff00ff" toneMapped={false} />
+            </mesh>
+          </group>
+        ))}
+
+        {/* Backing Plate */}
         <mesh position={[0, 0, -0.1]}>
-          <planeGeometry args={[17, 10]} />
+          <planeGeometry args={[26, 12]} />
           <meshStandardMaterial color="black" roughness={0.1} />
         </mesh>
-        {/* The Screen */}
-        <Suspense fallback={<mesh><planeGeometry args={[16, 9]} /><meshBasicMaterial color="gray" /></mesh>}>
-          <VideoDisplay texture={texture} isPlaying={isPlaying} />
-        </Suspense>
       </group>
+      {/* The Screen */}
+
 
       {/* 3. Control Panel */}
       {/* Pass the raw video element handling from the texture */}
@@ -297,7 +366,7 @@ function Stage({ isPlaying, setIsPlaying }) {
         setIsPlaying={setIsPlaying}
         videoElement={texture.image}
       />
-    </group>
+    </group >
   );
 }
 
@@ -367,10 +436,36 @@ export default function App() {
               <meshBasicMaterial color="#ff00ff" toneMapped={false} />
             </mesh>
 
-            {/* Ceiling - Dark with faint grid */}
-            <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 15, 0]}>
-              <planeGeometry args={[50, 100]} />
-              <meshStandardMaterial color="#050505" side={THREE.DoubleSide} roughness={0.9} />
+            {/* Ceiling - Truss Structure */}
+            {/* Main Z-Beams (Lengthwise) - Thinner */}
+            {[-15, -5, 5, 15].map((x, i) => (
+              <mesh key={`beam-z-${i}`} position={[x, 15, 0]}>
+                <boxGeometry args={[0.6, 0.6, 100]} />
+                <meshStandardMaterial color="#111" metalness={0.8} roughness={0.4} />
+              </mesh>
+            ))}
+
+            {/* Cross X-Beams (Widthwise) - Thinner */}
+            {Array.from({ length: 10 }).map((_, i) => (
+              <group key={`beam-x-${i}`} position={[0, 15, -45 + i * 10]}>
+                <mesh>
+                  <boxGeometry args={[50, 0.5, 0.5]} />
+                  <meshStandardMaterial color="#111" metalness={0.8} roughness={0.4} />
+                </mesh>
+                {/* Connector Joints at intersections */}
+                {[-15, -5, 5, 15].map((jx, j) => (
+                  <mesh key={j} position={[jx, 0, 0]}>
+                    <boxGeometry args={[0.8, 0.8, 0.8]} />
+                    <meshStandardMaterial color="#222" metalness={0.9} roughness={0.2} />
+                  </mesh>
+                ))}
+              </group>
+            ))}
+
+            {/* Dark Void Cover */}
+            <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 16, 0]}>
+              <planeGeometry args={[100, 200]} />
+              <meshBasicMaterial color="black" />
             </mesh>
 
             {/* Ceiling Light Panels & Illumination */}
