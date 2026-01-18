@@ -263,7 +263,7 @@ export default function App() {
           {/* 1. Post Processing - The "Cinematic" Look */}
           <EffectComposer disableNormalPass>
             <Bloom luminanceThreshold={0.2} mipmapBlur intensity={1.5} radius={0.5} />
-            <Vignette eskil={false} offset={0.1} darkness={1.1} />
+            {/* <Vignette eskil={false} offset={0.1} darkness={1.1} /> */}
           </EffectComposer>
 
           {/* 2. Environment & Lighting */}
