@@ -160,7 +160,7 @@ function ControlPanel({ isPlaying, setIsPlaying, videoElement }) {
   };
 
   return (
-    <group position={[0, 1.2, 8]}>
+    <group position={[0, 0.7, 8]}>
       {/* 1. Kiosk Structure */}
       {/* Main Stand (Solid Tower) */}
       <mesh position={[0, -1.2, 0]}>
