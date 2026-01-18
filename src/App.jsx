@@ -136,6 +136,7 @@ function ControlButton({ position, label, onClick, color = "#00ffff", size = 0.1
 
 function ControlPanel({ isPlaying, setIsPlaying, videoElement }) {
   const [hovered, setHover] = useState(false);
+  const [volume, setVolume] = useState(100); // Track volume as percentage (0-100)
 
   // Helper actions
   const skip = (seconds) => {
@@ -151,8 +152,10 @@ function ControlPanel({ isPlaying, setIsPlaying, videoElement }) {
   const adjustVolume = (amount) => {
     if (videoElement) {
       videoElement.muted = false; // Ensure unmuted when changing volume
-      videoElement.volume = Math.max(0, Math.min(1, videoElement.volume + amount));
-      console.log("Volume:", videoElement.volume);
+      // Calculate new volume
+      const newVol = Math.max(0, Math.min(1, videoElement.volume + amount));
+      videoElement.volume = newVol;
+      setVolume(Math.round(newVol * 100)); // Update state
     }
   };
 
@@ -213,12 +216,24 @@ function ControlPanel({ isPlaying, setIsPlaying, videoElement }) {
         <ControlButton position={[0, 0.45, 0.04]} label="RESTART" onClick={restart} color="#ffcc00" />
 
         {/* Left/Right: Skip */}
-        <ControlButton position={[-0.6, 0, 0.04]} label="-10s" onClick={() => skip(-10)} />
-        <ControlButton position={[0.6, 0, 0.04]} label="+10s" onClick={() => skip(10)} />
+        <ControlButton position={[-0.7, 0, 0.04]} label="-10s" onClick={() => skip(-10)} />
+        <ControlButton position={[0.7, 0, 0.04]} label="+10s" onClick={() => skip(10)} />
 
-        {/* Bottom: Volume */}
-        <ControlButton position={[-0.3, -0.4, 0.04]} label="VOL -" onClick={() => adjustVolume(-0.1)} color="#00ff00" />
-        <ControlButton position={[0.3, -0.4, 0.04]} label="VOL +" onClick={() => adjustVolume(0.1)} color="#00ff00" />
+        {/* Bottom: Volume Controls */}
+        <ControlButton position={[-0.5, -0.4, 0.04]} label="VOL -" onClick={() => adjustVolume(-0.1)} color="#00ff00" />
+
+        {/* Volume Display Text */}
+        <Text
+          position={[0, -0.4, 0.04]}
+          fontSize={0.1}
+          color="#00ff00"
+          anchorX="center"
+          anchorY="middle"
+        >
+          {`VOL: ${volume}%`}
+        </Text>
+
+        <ControlButton position={[0.5, -0.4, 0.04]} label="VOL +" onClick={() => adjustVolume(0.1)} color="#00ff00" />
 
         {/* Main Hitbox */}
         <mesh
