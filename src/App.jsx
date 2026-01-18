@@ -1,6 +1,6 @@
 import React, { Suspense, useState, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { PointerLockControls, Sky, Text, Box, useTexture, KeyboardControls, useKeyboardControls, Environment, Text3D, MeshReflectorMaterial } from '@react-three/drei';
+import { PointerLockControls, Sky, Text, Box, useTexture, KeyboardControls, useKeyboardControls, Environment, Text3D, MeshReflectorMaterial, useVideoTexture } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
 
@@ -55,7 +55,199 @@ function LoreFrame({ url, position, rotation = [0, 0, 0], name, description }) {
   );
 }
 
+// 4. MV Player & Components
+function VideoDisplay({ texture, isPlaying }) {
+  // Sync Playback
+  React.useEffect(() => {
+    if (texture?.image) {
+      if (isPlaying) {
+        texture.image.play().catch(e => console.log("Video Play Error:", e));
+      } else {
+        texture.image.pause();
+      }
+    }
+  }, [isPlaying, texture]);
+
+  return (
+    <mesh rotation={[0, 0, 0]} position={[0, 5, 0]}>
+      <planeGeometry args={[16, 9]} />
+      <meshBasicMaterial map={texture} toneMapped={false} />
+    </mesh>
+  );
+}
+
+function ControlButton({ position, label, onClick, color = "#00ffff", size = 0.15 }) {
+  const [hovered, setHover] = useState(false);
+  return (
+    <group position={position}>
+      <mesh
+        onClick={(e) => { e.stopPropagation(); onClick(); }}
+        onPointerOver={() => setHover(true)}
+        onPointerOut={() => setHover(false)}
+      >
+        <circleGeometry args={[size, 32]} />
+        <meshBasicMaterial color={hovered ? "white" : color} toneMapped={false} />
+      </mesh>
+      <Text position={[0, -size - 0.05, 0]} fontSize={0.08} color="white" anchorX="center" anchorY="top">
+        {label}
+      </Text>
+    </group>
+  );
+}
+
+function ControlPanel({ isPlaying, setIsPlaying, videoElement }) {
+  const [hovered, setHover] = useState(false);
+
+  // Helper actions
+  const skip = (seconds) => {
+    if (videoElement) videoElement.currentTime += seconds;
+  };
+  const restart = () => {
+    if (videoElement) {
+      videoElement.currentTime = 0;
+      videoElement.play();
+      setIsPlaying(true);
+    }
+  };
+  const adjustVolume = (amount) => {
+    if (videoElement) {
+      videoElement.volume = Math.max(0, Math.min(1, videoElement.volume + amount));
+      console.log("Volume:", videoElement.volume);
+    }
+  };
+
+  return (
+    <group position={[0, 1.2, 8]}>
+      {/* 1. Kiosk Structure */}
+      {/* Main Stand (Solid Tower) */}
+      <mesh position={[0, -1.2, 0]}>
+        <boxGeometry args={[0.8, 2.4, 0.6]} />
+        <meshStandardMaterial color="#1a1a1a" metalness={0.8} roughness={0.3} />
+      </mesh>
+
+      {/* Angled Console Top */}
+      <mesh position={[0, 0.5, 0]} rotation={[-0.5, 0, 0]}>
+        <boxGeometry args={[2.2, 1.6, 0.2]} />
+        <meshStandardMaterial color="#222" metalness={0.9} roughness={0.2} />
+      </mesh>
+
+      {/* Neon Accents on Stand */}
+      <mesh position={[0, -1.2, 0.31]}>
+        <boxGeometry args={[0.05, 2.4, 0.05]} />
+        <meshBasicMaterial color="cyan" toneMapped={false} />
+      </mesh>
+
+      {/* 2. Embedded Glass Interface (Placed ON the angled console) */}
+      {/* Tightened Z from 0.13 to 0.102 for flush look (embedded screen) */}
+      <group position={[0, 0.5, 0.102]} rotation={[-0.5, 0, 0]}>
+        {/* Glass Panel Surface */}
+        <mesh>
+          <boxGeometry args={[2, .2, 0.02]} />
+          <meshPhysicalMaterial
+            color="black"
+            transparent
+            opacity={0.9}
+            roughness={0.1}
+            metalness={0.8}
+            transmission={0} // Opaque screen look
+            thickness={0}
+          />
+        </mesh>
+
+        {/* Glowing Rim */}
+        <mesh>
+          <boxGeometry args={[2.02, 1.22, 0.04]} />
+          <meshBasicMaterial color="#00ffff" wireframe />
+        </mesh>
+
+        {/* --- CONTROLS --- */}\n
+        {/* Center: Play/Pause (Standardized Button) */}
+        <ControlButton
+          position={[0, 0, 0.04]}
+          label={isPlaying ? "PAUSE" : "PLAY"}
+          onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying); }}
+          color={isPlaying ? "#ff3333" : "#00ffff"}
+        />
+
+        {/* Top: Restart */}
+        <ControlButton position={[0, 0.45, 0.04]} label="RESTART" onClick={restart} color="#ffcc00" />
+
+        {/* Left/Right: Skip */}
+        <ControlButton position={[-0.6, 0, 0.04]} label="-10s" onClick={() => skip(-10)} />
+        <ControlButton position={[0.6, 0, 0.04]} label="+10s" onClick={() => skip(10)} />
+
+        {/* Bottom: Volume */}
+        <ControlButton position={[-0.3, -0.4, 0.04]} label="VOL -" onClick={() => adjustVolume(-0.1)} color="#00ff00" />
+        <ControlButton position={[0.3, -0.4, 0.04]} label="VOL +" onClick={() => adjustVolume(0.1)} color="#00ff00" />
+
+        {/* Main Hitbox */}
+        <mesh
+          position={[0, 0, 0.03]}
+          visible={false}
+          onClick={(e) => {
+            e.stopPropagation();
+            // Default to play/pause if not clicking specific buttons
+            // But since buttons are on top, they catch events first if z is higher?
+            // Actually, let's just leave the buttons to handle themselves.
+            // This hitbox is fallback if user misses a button but hits panel.
+            setIsPlaying(!isPlaying);
+          }}
+        >
+          <boxGeometry args={[2, 1.2, 0.01]} />
+          <meshBasicMaterial color="red" />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
+function Stage({ isPlaying, setIsPlaying }) {
+  // Lifted state: Load texture here
+  const texture = useVideoTexture("/assets/Mvtest.mp4", { start: false });
+
+  return (
+    <group position={[0, 0, -28]}>
+      {/* 1. Stage Platform */}
+      <mesh position={[0, 1, 0]} receiveShadow>
+        <boxGeometry args={[30, 2, 15]} />
+        <meshStandardMaterial color="#050505" roughness={0.8} metalness={0.5} />
+      </mesh>
+      {/* Neon Edges */}
+      <mesh position={[0, 1.1, -7.55]}>
+        <boxGeometry args={[30, 0.1, 0.1]} />
+        <meshBasicMaterial color="#00ffff" toneMapped={false} />
+      </mesh>
+      <mesh position={[0, 1.1, 7.55]}>
+        <boxGeometry args={[30, 0.1, 0.1]} />
+        <meshBasicMaterial color="#ff00ff" toneMapped={false} />
+      </mesh>
+
+      {/* 2. Video Screen */}
+      <group position={[0, 5, -2]}>
+        {/* Black Frame */}
+        <mesh position={[0, 0, -0.1]}>
+          <planeGeometry args={[17, 10]} />
+          <meshStandardMaterial color="black" roughness={0.1} />
+        </mesh>
+        {/* The Screen */}
+        <Suspense fallback={<mesh><planeGeometry args={[16, 9]} /><meshBasicMaterial color="gray" /></mesh>}>
+          <VideoDisplay texture={texture} isPlaying={isPlaying} />
+        </Suspense>
+      </group>
+
+      {/* 3. Control Panel */}
+      {/* Pass the raw video element handling from the texture */}
+      <ControlPanel
+        isPlaying={isPlaying}
+        setIsPlaying={setIsPlaying}
+        videoElement={texture.image}
+      />
+    </group>
+  );
+}
+
 export default function App() {
+  const [isPlaying, setIsPlaying] = useState(false);
   return (
     // 3. ห่อด้วย KeyboardControls เพื่อให้ใช้ WASD ได้
     <KeyboardControls
@@ -83,7 +275,7 @@ export default function App() {
           <fogExp2 attach="fog" args={['#050505', 0.03]} />
 
           {/* Lighting System */}
-          <ambientLight intensity={0.15} /> {/* Low ambient for contrast */}
+          <ambientLight intensity={0.5} /> {/* Increased ambient for room visibility */}
           <spotLight position={[0, 15, 10]} angle={0.6} penumbra={0.5} intensity={2} castShadow color="#ffffff" />
 
           <Suspense fallback={null}>
@@ -126,6 +318,19 @@ export default function App() {
               <meshStandardMaterial color="#050505" side={THREE.DoubleSide} roughness={0.9} />
             </mesh>
 
+            {/* Ceiling Light Panels & Illumination */}
+            {[-15, 0, 15].map((zPos, i) => (
+              <group key={i} position={[0, 14.9, zPos]}>
+                {/* Visual Panel */}
+                <mesh rotation={[Math.PI / 2, 0, 0]}>
+                  <planeGeometry args={[20, 2]} />
+                  <meshBasicMaterial color="white" toneMapped={false} />
+                </mesh>
+                {/* Light Source */}
+                <pointLight intensity={2} distance={30} decay={2} color="white" />
+              </group>
+            ))}
+
             {/* Walls */}
             <mesh position={[-12, 7.5, 0]} rotation={[0, Math.PI / 2, 0]}>
               <planeGeometry args={[100, 15]} />
@@ -136,11 +341,7 @@ export default function App() {
               <meshStandardMaterial color="#020202" roughness={0.8} />
             </mesh>
 
-            {/* End Wall */}
-            <mesh position={[0, 7.5, -25]}>
-              <planeGeometry args={[50, 15]} />
-              <meshStandardMaterial color="#000" />
-            </mesh>
+            {/* End Wall Removed for Stage */}
 
             {/* Pillars with Neon Accents */}
             {[-10, -5, 0, 5, 10].map((zPos, i) => (
@@ -206,28 +407,8 @@ export default function App() {
               <LoreFrame url="/assets/MildR.jpg" position={[8, 3.5, -5]} rotation={[0, -Math.PI / 2, 0]} name="MILD-R" description="MUTANT / HEALER" />
             </group>
 
-            {/* 5. Giant Glowing Title */}
-            <Text
-              position={[0, 8, -20]}
-              fontSize={2}
-              color="white"
-              font="https://fonts.gstatic.com/s/raleway/v14/1Ptrg8zYS_SKggPNwK4vaqI.woff"
-              anchorX="center"
-              anchorY="middle"
-            >
-              WORLD END
-              <meshBasicMaterial toneMapped={false} color="white" />
-            </Text>
-            <Text
-              position={[0, 6, -20]}
-              fontSize={1}
-              color="#aaa"
-              font="https://fonts.gstatic.com/s/raleway/v14/1Ptrg8zYS_SKggPNwK4vaqI.woff"
-              anchorX="center"
-              anchorY="middle"
-            >
-              2nd ANNIVERSARY EXHIBITION
-            </Text>
+            {/* 6. Anniversary Stage & MV Player */}
+            <Stage isPlaying={isPlaying} setIsPlaying={setIsPlaying} />
           </Suspense>
 
           <PointerLockControls />
@@ -244,6 +425,7 @@ export default function App() {
           <div style={{ marginTop: 20, fontSize: '0.8rem', color: '#666' }}>
             <span style={{ border: '1px solid #444', padding: '5px 10px', borderRadius: 4 }}>WASD to Walk</span>
             <span style={{ marginLeft: 10, border: '1px solid #444', padding: '5px 10px', borderRadius: 4 }}>Mouse to Look</span>
+            <span style={{ marginLeft: 10, border: '1px solid #444', padding: '5px 10px', borderRadius: 4 }}>Click Stand to Play MV</span>
           </div>
         </div>
       </div>
