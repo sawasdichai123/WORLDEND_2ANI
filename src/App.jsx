@@ -76,6 +76,45 @@ function VideoDisplay({ texture, isPlaying }) {
   );
 }
 
+// 5. Dynamic Reticle (Cursor)
+function Reticle() {
+  const [opacity, setOpacity] = useState(0);
+  const timeoutRef = useRef(null);
+
+  React.useEffect(() => {
+    const handleMouseMove = () => {
+      setOpacity(1); // Show immediately
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      // Hide after 2 seconds of no movement
+      timeoutRef.current = setTimeout(() => setOpacity(0), 2000);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  return (
+    <div style={{
+      position: 'fixed', // Fixed ensures it centers to screen, not parent container
+      top: '50%',
+      left: '50%',
+      width: '8px',
+      height: '8px',
+      backgroundColor: 'white',
+      borderRadius: '50%',
+      transform: 'translate(-50%, -50%)',
+      pointerEvents: 'none',
+      opacity: opacity,
+      transition: 'opacity 0.3s ease',
+      zIndex: 1000,
+      boxShadow: '0 0 4px rgba(255, 255, 255, 0.8)'
+    }} />
+  );
+}
+
 function ControlButton({ position, label, onClick, color = "#00ffff", size = 0.15 }) {
   const [hovered, setHover] = useState(false);
   return (
@@ -421,6 +460,7 @@ export default function App() {
           fontFamily: "'Segoe UI', Roboto, sans-serif", pointerEvents: 'none',
           textShadow: '0px 0px 10px rgba(0,255,255,0.5)'
         }}>
+          <Reticle />
           <h1 style={{ margin: 0, fontWeight: 300, fontSize: '2.5rem', letterSpacing: '0.2rem', textTransform: 'uppercase' }}>World End</h1>
           <h2 style={{ margin: 0, fontWeight: 600, fontSize: '1rem', color: '#888', letterSpacing: '0.1rem' }}>DIGITAL EXHIBITION</h2>
           <div style={{ marginTop: 20, fontSize: '0.8rem', color: '#666' }}>
