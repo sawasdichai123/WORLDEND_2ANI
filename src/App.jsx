@@ -436,50 +436,70 @@ export default function App() {
               <meshBasicMaterial color="#ff00ff" toneMapped={false} />
             </mesh>
 
-            {/* Ceiling - Truss Structure */}
-            {/* Main Z-Beams (Lengthwise) - Thinner */}
-            {[-15, -5, 5, 15].map((x, i) => (
-              <mesh key={`beam-z-${i}`} position={[x, 15, 0]}>
-                <boxGeometry args={[0.6, 0.6, 100]} />
-                <meshStandardMaterial color="#111" metalness={0.8} roughness={0.4} />
+            {/* Ceiling - Premium Tech Structure */}
+            <group position={[0, 15, 0]}>
+              {/* 1. Main Ceiling Plate (The "Roof") */}
+              <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 1, 0]}>
+                <planeGeometry args={[100, 100]} />
+                <meshStandardMaterial color="#050505" roughness={0.9} metalness={0.2} />
               </mesh>
-            ))}
 
-            {/* Cross X-Beams (Widthwise) - Thinner */}
-            {Array.from({ length: 10 }).map((_, i) => (
-              <group key={`beam-x-${i}`} position={[0, 15, -45 + i * 10]}>
-                <mesh>
-                  <boxGeometry args={[50, 0.5, 0.5]} />
-                  <meshStandardMaterial color="#111" metalness={0.8} roughness={0.4} />
-                </mesh>
-                {/* Connector Joints at intersections */}
-                {[-15, -5, 5, 15].map((jx, j) => (
-                  <mesh key={j} position={[jx, 0, 0]}>
-                    <boxGeometry args={[0.8, 0.8, 0.8]} />
-                    <meshStandardMaterial color="#222" metalness={0.9} roughness={0.2} />
+              {/* 2. Structural Grid System */}
+              {/* Longitudinal Beams (Z-Axis) */}
+              {[-15, -5, 5, 15].map((x, i) => (
+                <group key={`c-beam-z-${i}`} position={[x, 0, 0]}>
+                  {/* Main Beam Body */}
+                  <mesh>
+                    <boxGeometry args={[1, 1, 100]} />
+                    <meshStandardMaterial color="#1a1a1a" metalness={0.8} roughness={0.2} />
                   </mesh>
-                ))}
-              </group>
-            ))}
+                  {/* Integrated Neon Strip (Bottom face) */}
+                  <mesh position={[0, -0.51, 0]} rotation={[Math.PI / 2, 0, 0]}>
+                    <planeGeometry args={[0.2, 100]} />
+                    <meshBasicMaterial color="white" toneMapped={false} />
+                  </mesh>
+                </group>
+              ))}
 
-            {/* Dark Void Cover */}
-            <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 16, 0]}>
-              <planeGeometry args={[100, 200]} />
-              <meshBasicMaterial color="black" />
-            </mesh>
+              {/* Transverse Beams (X-Axis) */}
+              {Array.from({ length: 11 }).map((_, i) => {
+                const z = -50 + i * 10;
+                return (
+                  <group key={`c-beam-x-${i}`} position={[0, 0.2, z]}>
+                    <mesh>
+                      <boxGeometry args={[50, 0.6, 0.8]} />
+                      <meshStandardMaterial color="#1a1a1a" metalness={0.8} roughness={0.2} />
+                    </mesh>
+                    {/* Joint Details */}
+                    {[-15, -5, 5, 15].map((jx, j) => (
+                      <mesh key={j} position={[jx, 0, 0]}>
+                        <boxGeometry args={[1.2, 0.8, 1.2]} />
+                        <meshStandardMaterial color="#222" metalness={0.9} roughness={0.1} />
+                      </mesh>
+                    ))}
+                  </group>
+                );
+              })}
 
-            {/* Ceiling Light Panels & Illumination */}
-            {[-15, 0, 15].map((zPos, i) => (
-              <group key={i} position={[0, 14.9, zPos]}>
-                {/* Visual Panel */}
-                <mesh rotation={[Math.PI / 2, 0, 0]}>
-                  <planeGeometry args={[20, 2]} />
-                  <meshBasicMaterial color="white" toneMapped={false} />
-                </mesh>
-                {/* Light Source */}
-                <pointLight intensity={2} distance={30} decay={2} color="white" />
-              </group>
-            ))}
+              {/* 3. Central Feature Lighting (The "Sky Light" equivalent) */}
+              {/* Large Rectangular Light Frames */}
+              {[-20, 0, 20].map((zPos, i) => (
+                <group key={`light-frame-${i}`} position={[0, -0.2, zPos]}>
+                  {/* Frame */}
+                  <mesh rotation={[Math.PI / 2, 0, 0]}>
+                    <planeGeometry args={[8, 20]} />
+                    <meshStandardMaterial color="#000" metalness={0.9} roughness={0.1} />
+                  </mesh>
+                  {/* Inner Light */}
+                  <mesh position={[0, -0.05, 0]} rotation={[Math.PI / 2, 0, 0]}>
+                    <planeGeometry args={[7, 18]} />
+                    <meshBasicMaterial color="#ffffff" toneMapped={false} />
+                  </mesh>
+                  {/* Light Source */}
+                  <pointLight instanceWithoutShadows intensity={1} distance={20} decay={2} color="white" position={[0, -2, 0]} />
+                </group>
+              ))}
+            </group>
 
             {/* Walls */}
             <mesh position={[-12, 7.5, 0]} rotation={[0, Math.PI / 2, 0]}>
@@ -488,6 +508,12 @@ export default function App() {
             </mesh>
             <mesh position={[12, 7.5, 0]} rotation={[0, -Math.PI / 2, 0]}>
               <planeGeometry args={[100, 15]} />
+              <meshStandardMaterial color="#020202" roughness={0.8} />
+            </mesh>
+
+            {/* Back Wall (Closing the hall) */}
+            <mesh position={[0, 7.5, 50]} rotation={[0, Math.PI, 0]}>
+              <planeGeometry args={[24, 15]} />
               <meshStandardMaterial color="#020202" roughness={0.8} />
             </mesh>
 
