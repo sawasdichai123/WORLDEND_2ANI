@@ -370,6 +370,115 @@ function Stage({ isPlaying, setIsPlaying }) {
   );
 }
 
+function SpecialThanksBoard() {
+  const credits = [
+    { name: "YOUR NAME HERE", role: "CREATOR" },
+    { name: "SUPPORTERS", role: "PATRONS" },
+    { name: "COMMUNITY", role: "TESTERS" },
+    { name: "COMMUNITY", role: "TESTERS" },
+    { name: "Wernjia", role: "ENGINEERING" }
+  ];
+
+  return (
+    <group position={[0, 6, 49.8]} rotation={[0, Math.PI, 0]}>
+      {/* 1. Main Structure - Metallic Frame */}
+      {/* Side Pillars */}
+      <mesh position={[-4.1, 0, 0]}>
+        <boxGeometry args={[0.2, 5.2, 0.3]} />
+        <meshStandardMaterial color="#1a1a1a" metalness={0.9} roughness={0.2} />
+      </mesh>
+      <mesh position={[4.1, 0, 0]}>
+        <boxGeometry args={[0.2, 5.2, 0.3]} />
+        <meshStandardMaterial color="#1a1a1a" metalness={0.9} roughness={0.2} />
+      </mesh>
+      {/* Top/Bottom Rails */}
+      <mesh position={[0, 2.6, 0]}>
+        <boxGeometry args={[8.4, 0.2, 0.3]} />
+        <meshStandardMaterial color="#1a1a1a" metalness={0.9} roughness={0.2} />
+      </mesh>
+      <mesh position={[0, -2.6, 0]}>
+        <boxGeometry args={[8.4, 0.2, 0.3]} />
+        <meshStandardMaterial color="#1a1a1a" metalness={0.9} roughness={0.2} />
+      </mesh>
+
+      {/* 2. Glass Panel Background */}
+      <mesh position={[0, 0, 0.05]}>
+        <boxGeometry args={[8, 5, 0.1]} />
+        <meshPhysicalMaterial
+          color="#000000"
+          metalness={0.6}
+          roughness={0.2}
+          transmission={0.8} // Glassy look
+          thickness={0.5}
+          transparent
+          opacity={0.9}
+        />
+      </mesh>
+
+      {/* 3. Neon Accents - Vertical Strips */}
+      <mesh position={[-3.9, 0, 0.16]}>
+        <boxGeometry args={[0.05, 4.8, 0.02]} />
+        <meshBasicMaterial color="cyan" toneMapped={false} />
+      </mesh>
+      <mesh position={[3.9, 0, 0.16]}>
+        <boxGeometry args={[0.05, 4.8, 0.02]} />
+        <meshBasicMaterial color="cyan" toneMapped={false} />
+      </mesh>
+
+      {/* 4. Title Text */}
+      <Text
+        position={[0, 1.8, 0.2]}
+        fontSize={0.6}
+        color="white"
+        anchorX="center"
+        anchorY="middle"
+        letterSpacing={0.1}
+      >
+        SPECIAL THANKS
+      </Text>
+
+      {/* Divider */}
+      <mesh position={[0, 1.3, 0.2]}>
+        <planeGeometry args={[5, 0.02]} />
+        <meshBasicMaterial color="magenta" toneMapped={false} />
+      </mesh>
+
+      {/* 5. Names List (Split Columns) */}
+      {credits.map((item, i) => (
+        <group key={i} position={[0, 0.7 - (i * 0.5), 0.2]}>
+          {/* Name (Right Aligned to Center - Padding) */}
+          <Text
+            position={[-0.2, 0, 0]}
+            fontSize={0.28}
+            color="#dddddd"
+            anchorX="right"
+            anchorY="middle"
+          >
+            {item.name}
+          </Text>
+
+          {/* Separator / Dot */}
+          <mesh position={[0, 0, 0]}>
+            <circleGeometry args={[0.03, 16]} />
+            <meshBasicMaterial color="#555" />
+          </mesh>
+
+          {/* Role (Left Aligned to Center + Padding) */}
+          <Text
+            position={[0.2, 0, 0]}
+            fontSize={0.28}
+            color="#00ffff" // Cyan for role distinction
+            anchorX="left"
+            anchorY="middle"
+          >
+            {item.role}
+          </Text>
+        </group>
+      ))}
+    </group>
+  );
+}
+
 export default function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   return (
@@ -516,6 +625,9 @@ export default function App() {
               <planeGeometry args={[24, 15]} />
               <meshStandardMaterial color="#020202" roughness={0.8} />
             </mesh>
+
+            {/* Special Thanks Board */}
+            <SpecialThanksBoard />
 
             {/* End Wall Removed for Stage */}
 
