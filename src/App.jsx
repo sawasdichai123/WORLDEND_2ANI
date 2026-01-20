@@ -8,13 +8,59 @@ import { WelcomeScreen } from './components/WelcomeScreen';
 import { PortraitCanvas } from './components/PortraitCanvas';
 
 
-// 1. สร้าง Component สำหรับควบคุมการเดิน
+// 1. Player Control with Collision Detection
 function Player() {
   const [, getKeys] = useKeyboardControls();
-  const speed = 0.1;
+  const speed = 0.15; // Slightly faster for better feel
+  const playerRadius = 0.5; // Collision radius
+
+  // Define Obstacles (Axis-Aligned Bounding Boxes)
+  // x, z = center; w, d = full width/depth
+  const obstacles = [
+    // Kiosk removed - can walk through it now
+    // Left Pillars (x=-10)
+    ...[-10, -5, 0, 5, 10].map(z => ({ x: -10, z, w: 1.2, d: 1.2 })),
+    // Right Pillars (x=10)
+    ...[-10, -5, 0, 5, 10].map(z => ({ x: 10, z, w: 1.2, d: 1.2 })),
+
+    // Character Frames (Floating at x= +/- 8)
+    // Size approx: Width (global Z) = 4, Depth (global X) = 0.3
+    // Left Frames
+    ...[5, 0, -5].map(z => ({ x: -8, z, w: 0.6, d: 4.0 })),
+    // Right Frames
+    ...[5, 0, -5].map(z => ({ x: 8, z, w: 0.6, d: 4.0 })),
+  ];
+
+  const checkCollision = (newPos) => {
+    // 1. Hallway Boundaries (Walls)
+    // X Limits: -11.5 to 11.5 (Walls at +/- 12)
+    if (newPos.x < -11.5 || newPos.x > 11.5) return true;
+
+    // Z Limits: -19 (Stage Front) to 49 (Back Wall)
+    // Stage starts approx at Z = -20.5 (Center -28, Depth 15/2 = 7.5)
+    if (newPos.z < -19 || newPos.z > 49) return true;
+
+    // 2. Obstacles
+    for (let obs of obstacles) {
+      // Simple AABB overlap check
+      const halfW = obs.w / 2 + playerRadius;
+      const halfD = obs.d / 2 + playerRadius;
+      if (
+        newPos.x > obs.x - halfW &&
+        newPos.x < obs.x + halfW &&
+        newPos.z > obs.z - halfD &&
+        newPos.z < obs.z + halfD
+      ) {
+        return true;
+      }
+    }
+    return false;
+  };
 
   useFrame((state) => {
     const { forward, backward, left, right } = getKeys();
+
+    // Calculate Movement Vector
     const direction = new THREE.Vector3();
     const frontVector = new THREE.Vector3(0, 0, Number(backward) - Number(forward));
     const sideVector = new THREE.Vector3(Number(left) - Number(right), 0, 0);
@@ -25,7 +71,20 @@ function Player() {
       .multiplyScalar(speed)
       .applyEuler(state.camera.rotation);
 
-    state.camera.position.add(new THREE.Vector3(direction.x, 0, direction.z));
+    // Apply X Movement (Sliding)
+    const currentPos = state.camera.position.clone();
+    const nextPosX = currentPos.clone().add(new THREE.Vector3(direction.x, 0, 0));
+
+    if (!checkCollision(nextPosX)) {
+      state.camera.position.x += direction.x;
+    }
+
+    // Apply Z Movement (Sliding)
+    const nextPosZ = state.camera.position.clone().add(new THREE.Vector3(0, 0, direction.z));
+    // Re-check Z from possibly new X position
+    if (!checkCollision(nextPosZ)) {
+      state.camera.position.z += direction.z;
+    }
   });
 
   return null;
@@ -46,10 +105,21 @@ function VideoDisplay({ texture, isPlaying }) {
     }
   }, [isPlaying, texture]);
 
+  // ADJUST BRIGHTNESS HERE (0.0 to 1.0)
+  // 1.0 = Original Brightness
+  // 0.5 = 50% Darker
+  // 2.0 = 2x Brighter (might blowout if toneMapped=false)
+  const brightness = 0.5; //video brightness
+
   return (
     <mesh>
       <planeGeometry args={[16, 9]} />
-      <meshBasicMaterial map={texture} toneMapped={false} />
+      <meshBasicMaterial
+        map={texture}
+        // Create a color based on the brightness scalar (white * brightness)
+        color={new THREE.Color().setScalar(brightness)}
+        toneMapped={false}
+      />
     </mesh>
   );
 }
@@ -234,6 +304,28 @@ function ControlPanel({ isPlaying, setIsPlaying, videoElement }) {
   );
 }
 
+// DEBUG: Visualize Collision Boxes
+function DebugObstacles() {
+  const obstacles = [
+    // Kiosk removed - can walk through it now
+    ...[-10, -5, 0, 5, 10].map(z => ({ x: -10, z, w: 1.2, d: 1.2 })), // Left Pillars
+    ...[-10, -5, 0, 5, 10].map(z => ({ x: 10, z, w: 1.2, d: 1.2 })), // Right Pillars
+    ...[5, 0, -5].map(z => ({ x: -8, z, w: 0.6, d: 4.0 })), // Left Frames
+    ...[5, 0, -5].map(z => ({ x: 8, z, w: 0.6, d: 4.0 })), // Right Frames
+  ];
+
+  // return (
+  //   <group>
+  //     {obstacles.map((obs, i) => (
+  //       <mesh key={i} position={[obs.x, 1, obs.z]}>
+  //         <boxGeometry args={[obs.w, 2, obs.d]} />
+  //         <meshBasicMaterial color="red" wireframe />
+  //       </mesh>
+  //     ))}
+  //   </group>
+  // );
+}
+
 function Stage({ isPlaying, setIsPlaying }) {
   // Lifted state: Load texture here
   const texture = useVideoTexture("/assets/Mvtest.mp4", { start: false, muted: false });
@@ -274,13 +366,13 @@ function Stage({ isPlaying, setIsPlaying }) {
         </mesh>
 
         {/* Left Vertical Frame */}
-        <mesh position={[-8.7, 0, 0]}>
+        <mesh position={[-8.2, 0, 0]}>
           <boxGeometry args={[0.4, 9.8, 0.5]} />
           <meshStandardMaterial color="#111" metalness={1.0} roughness={0.1} />
         </mesh>
 
         {/* Right Vertical Frame */}
-        <mesh position={[8.7, 0, 0]}>
+        <mesh position={[8.2, 0, 0]}>
           <boxGeometry args={[0.4, 9.8, 0.5]} />
           <meshStandardMaterial color="#111" metalness={1.0} roughness={0.1} />
         </mesh>
@@ -732,6 +824,9 @@ export default function App() {
 
             {/* 6. Anniversary Stage & MV Player */}
             <Stage isPlaying={isPlaying} setIsPlaying={setIsPlaying} />
+
+            {/* DEBUG: Show invisible walls */}
+            <DebugObstacles />
           </Suspense>
 
           {/* ONLY ENABLE CONTROLS IF STARTED */}
