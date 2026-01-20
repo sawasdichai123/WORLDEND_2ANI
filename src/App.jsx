@@ -3,6 +3,8 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { PointerLockControls, Sky, Text, Box, useTexture, KeyboardControls, useKeyboardControls, Environment, Text3D, MeshReflectorMaterial, useVideoTexture } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
+import { EnvironmentEnhancements } from './components/EnvironmentEnhancements';
+
 
 // 1. สร้าง Component สำหรับควบคุมการเดิน
 function Player() {
@@ -372,11 +374,11 @@ function Stage({ isPlaying, setIsPlaying }) {
 
 function SpecialThanksBoard() {
   const credits = [
-    { name: "YOUR NAME HERE", role: "CREATOR" },
-    { name: "SUPPORTERS", role: "PATRONS" },
-    { name: "COMMUNITY", role: "TESTERS" },
-    { name: "COMMUNITY", role: "TESTERS" },
-    { name: "Wernjia", role: "ENGINEERING" }
+    { name: "DocterGamer", role: "Research" },
+    { name: "ZAYZHIK", role: "Research" },
+    { name: "NUT-R", role: "Research" },
+    { name: "BAM", role: "Research" },
+    { name: "Wernjia", role: "Research" }
   ];
 
   return (
@@ -505,10 +507,12 @@ export default function App() {
 
           {/* Atmosphere & Background */}
           <color attach="background" args={['#050505']} />
-          <fogExp2 attach="fog" args={['#050505', 0.03]} />
+          {/* Fog handled by EnvironmentEnhancements now */}
+
+          <EnvironmentEnhancements />
 
           {/* Lighting System */}
-          <ambientLight intensity={0.5} /> {/* Increased ambient for room visibility */}
+          <ambientLight intensity={0.2} /> {/* Lower ambient for more contrast */}
           <spotLight position={[0, 15, 10]} angle={0.6} penumbra={0.5} intensity={2} castShadow color="#ffffff" />
 
           <Suspense fallback={null}>
@@ -610,14 +614,23 @@ export default function App() {
               ))}
             </group>
 
-            {/* Walls */}
+            {/* Walls - CYBERPUNK GRID TEXTURE */}
             <mesh position={[-12, 7.5, 0]} rotation={[0, Math.PI / 2, 0]}>
               <planeGeometry args={[100, 15]} />
-              <meshStandardMaterial color="#020202" roughness={0.8} />
+              {/* Using wireframe to simulate a grid texture without external assets */}
+              <meshStandardMaterial color="#111" roughness={0.2} metalness={0.8} wireframe={true} />
+              <mesh position={[0, 0, -0.1]}>
+                <planeGeometry args={[100, 15]} />
+                <meshBasicMaterial color="#000" />
+              </mesh>
             </mesh>
             <mesh position={[12, 7.5, 0]} rotation={[0, -Math.PI / 2, 0]}>
               <planeGeometry args={[100, 15]} />
-              <meshStandardMaterial color="#020202" roughness={0.8} />
+              <meshStandardMaterial color="#111" roughness={0.2} metalness={0.8} wireframe={true} />
+              <mesh position={[0, 0, -0.1]}>
+                <planeGeometry args={[100, 15]} />
+                <meshBasicMaterial color="#000" />
+              </mesh>
             </mesh>
 
             {/* Back Wall (Closing the hall) */}
@@ -694,6 +707,9 @@ export default function App() {
               <spotLight position={[8, 10, -2]} target-position={[8, 3, -5]} angle={0.3} penumbra={0.5} intensity={50} castShadow color="magenta" />
               <LoreFrame url="/assets/MildR.jpg" position={[8, 3.5, -5]} rotation={[0, -Math.PI / 2, 0]} name="MILD-R" description="MUTANT / HEALER" />
             </group>
+
+
+
 
             {/* 6. Anniversary Stage & MV Player */}
             <Stage isPlaying={isPlaying} setIsPlaying={setIsPlaying} />
