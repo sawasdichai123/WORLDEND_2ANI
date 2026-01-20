@@ -5,6 +5,7 @@ import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { EnvironmentEnhancements } from './components/EnvironmentEnhancements';
 import { WelcomeScreen } from './components/WelcomeScreen';
+import { PortraitCanvas } from './components/PortraitCanvas';
 
 
 // 1. สร้าง Component สำหรับควบคุมการเดิน
@@ -30,33 +31,7 @@ function Player() {
   return null;
 }
 
-// 2. คอมโพเนนต์แสดงรูปภาพ (ปรับปรุงเรื่องความเสถียร)
-function LoreFrame({ url, position, rotation = [0, 0, 0], name, description }) {
-  // ใส่ fallback สีพื้นหลังกรณีโหลดรูปไม่ขึ้น
-  const texture = useTexture(url);
 
-  return (
-    <group position={position} rotation={rotation}>
-      <mesh>
-        <planeGeometry args={[3, 4]} />
-        <meshStandardMaterial map={texture} />
-      </mesh>
-
-      {/* ปรับแต่ง Font เล็กน้อยให้ชัดขึ้น */}
-      <Text position={[0, -2.5, 0]} fontSize={0.3} color="#00ffff" anchorY="top">
-        {name}
-      </Text>
-      <Text position={[0, -3.2, 0]} fontSize={0.15} maxWidth={2.5} textAlign="center" anchorY="top">
-        {description}
-      </Text>
-
-      {/* กรอบหลัง */}
-      <Box args={[3.2, 4.2, 0.1]} position={[0, 0, -0.1]}>
-        <meshStandardMaterial color="#111" />
-      </Box>
-    </group>
-  );
-}
 
 // 4. MV Player & Components
 function VideoDisplay({ texture, isPlaying }) {
@@ -620,6 +595,42 @@ export default function App() {
               ))}
             </group>
 
+            {/* NEW PORTRAIT FRAMES ON LEFT WALL (SAMPLES) */}
+            <PortraitCanvas
+              url="./assets/Xonebu.jpg"
+              position={[-11.9, 6, 20]}
+              rotation={[0, Math.PI / 2, 0]}
+              label="SAMPLE ART 03"
+              description="CONCEPT / DRAFT"
+              neonColor="cyan"
+            />
+            <PortraitCanvas
+              url="./assets/AMI.jpg"
+              position={[-11.9, 6, 30]}
+              rotation={[0, Math.PI / 2, 0]}
+              label="SAMPLE ART 04"
+              description="CONCEPT / FINAL"
+              neonColor="cyan"
+            />
+
+            {/* NEW PORTRAIT FRAMES ON RIGHT WALL (SAMPLES) */}
+            <PortraitCanvas
+              url="./assets/AMI.jpg"
+              position={[11.9, 6, 20]}
+              rotation={[0, -Math.PI / 2, 0]}
+              label="SAMPLE ART 01"
+              description="FANART / V1"
+              neonColor="magenta"
+            />
+            <PortraitCanvas
+              url="./assets/Ahyra.jpg"
+              position={[11.9, 6, 30]}
+              rotation={[0, -Math.PI / 2, 0]}
+              label="SAMPLE ART 02"
+              description="FANART / V2"
+              neonColor="magenta"
+            />
+
             {/* Walls - CYBERPUNK GRID TEXTURE */}
             <mesh position={[-12, 7.5, 0]} rotation={[0, Math.PI / 2, 0]}>
               <planeGeometry args={[100, 15]} />
@@ -647,6 +658,8 @@ export default function App() {
 
             {/* Special Thanks Board */}
             <SpecialThanksBoard />
+
+
 
             {/* End Wall Removed for Stage */}
 
@@ -685,33 +698,33 @@ export default function App() {
             {/* Left Side Characters */}
             <group>
               <spotLight position={[-8, 10, 8]} target-position={[-8, 3, 5]} angle={0.3} penumbra={0.5} intensity={50} castShadow color="cyan" />
-              <LoreFrame url="/assets/Xonebu.jpg" position={[-8, 3.5, 5]} rotation={[0, Math.PI / 2, 0]} name="XONEBU" description="ALIEN / X01" />
+              <PortraitCanvas url="/assets/Xonebu.jpg" position={[-8, 3.5, 5]} rotation={[0, Math.PI / 2, 0]} label="XONEBU" description="ALIEN / X01" neonColor="cyan" />
             </group>
 
             <group>
               <spotLight position={[-8, 10, 3]} target-position={[-8, 3, 0]} angle={0.3} penumbra={0.5} intensity={50} castShadow color="cyan" />
-              <LoreFrame url="/assets/AMI.jpg" position={[-8, 3.5, 0]} rotation={[0, Math.PI / 2, 0]} name="BETA AMI" description="ANDROID / GUARDIAN" />
+              <PortraitCanvas url="/assets/AMI.jpg" position={[-8, 3.5, 0]} rotation={[0, Math.PI / 2, 0]} label="BETA AMI" description="ANDROID / GUARDIAN" neonColor="cyan" />
             </group>
 
             <group>
               <spotLight position={[-8, 10, -2]} target-position={[-8, 3, -5]} angle={0.3} penumbra={0.5} intensity={50} castShadow color="cyan" />
-              <LoreFrame url="/assets/Ahyra.jpg" position={[-8, 3.5, -5]} rotation={[0, Math.PI / 2, 0]} name="ASHYRA" description="ENERGY / 300%" />
+              <PortraitCanvas url="/assets/Ahyra.jpg" position={[-8, 3.5, -5]} rotation={[0, Math.PI / 2, 0]} label="ASHYRA" description="ENERGY / 300%" neonColor="cyan" />
             </group>
 
             {/* Right Side Characters */}
             <group>
               <spotLight position={[8, 10, 8]} target-position={[8, 3, 5]} angle={0.3} penumbra={0.5} intensity={50} castShadow color="magenta" />
-              <LoreFrame url="/assets/Debirun.jpg" position={[8, 3.5, 5]} rotation={[0, -Math.PI / 2, 0]} name="DEBIRUN" description="COMMANDER / METEOR" />
+              <PortraitCanvas url="/assets/Debirun.jpg" position={[8, 3.5, 5]} rotation={[0, -Math.PI / 2, 0]} label="DEBIRUN" description="COMMANDER / METEOR" neonColor="magenta" />
             </group>
 
             <group>
               <spotLight position={[8, 10, 3]} target-position={[8, 3, 0]} angle={0.3} penumbra={0.5} intensity={50} castShadow color="magenta" />
-              <LoreFrame url="/assets/Tsururu.jpg" position={[8, 3.5, 0]} rotation={[0, -Math.PI / 2, 0]} name="TSURURU" description="CLOUD / HIGH ALTITUDE" />
+              <PortraitCanvas url="/assets/Tsururu.jpg" position={[8, 3.5, 0]} rotation={[0, -Math.PI / 2, 0]} label="TSURURU" description="CLOUD / HIGH ALTITUDE" neonColor="magenta" />
             </group>
 
             <group>
               <spotLight position={[8, 10, -2]} target-position={[8, 3, -5]} angle={0.3} penumbra={0.5} intensity={50} castShadow color="magenta" />
-              <LoreFrame url="/assets/MildR.jpg" position={[8, 3.5, -5]} rotation={[0, -Math.PI / 2, 0]} name="MILD-R" description="MUTANT / HEALER" />
+              <PortraitCanvas url="/assets/MildR.jpg" position={[8, 3.5, -5]} rotation={[0, -Math.PI / 2, 0]} label="MILD-R" description="MUTANT / HEALER" neonColor="magenta" />
             </group>
 
 

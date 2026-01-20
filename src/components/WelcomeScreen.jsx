@@ -130,7 +130,7 @@ export function WelcomeScreen({ onEnter, started }) {
                         e.currentTarget.style.boxShadow = '0 0 10px rgba(0, 255, 255, 0.2)';
                     }}
                 >
-                    ENTER SIMULATION
+                    ENTER DIGITAL EXHIBITION
                 </button>
             )}
 
