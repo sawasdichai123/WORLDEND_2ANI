@@ -4,6 +4,7 @@ import { PointerLockControls, Sky, Text, Box, useTexture, KeyboardControls, useK
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { EnvironmentEnhancements } from './components/EnvironmentEnhancements';
+import { WelcomeScreen } from './components/WelcomeScreen';
 
 
 // 1. สร้าง Component สำหรับควบคุมการเดิน
@@ -483,6 +484,7 @@ function SpecialThanksBoard() {
 
 export default function App() {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false); // Intro State
   return (
     // 3. ห่อด้วย KeyboardControls เพื่อให้ใช้ WASD ได้
     <KeyboardControls
@@ -493,7 +495,11 @@ export default function App() {
         { name: 'right', keys: ['ArrowRight', 'd', 'D'] },
       ]}
     >
-      <div style={{ width: '100vw', height: '100vh', background: 'black' }}>
+      <div style={{ width: '100vw', height: '100vh', background: 'black', overflow: 'hidden' }}>
+
+        {/* WELCOME SCREEN OVERLAY - Always mounted for fade-out logic */}
+        <WelcomeScreen started={hasStarted} onEnter={() => setHasStarted(true)} />
+
         <Canvas camera={{ fov: 40, position: [0, 2, 20] }} shadows gl={{ antialias: false, toneMapping: THREE.ReinhardToneMapping, toneMappingExposure: 1.5, outputColorSpace: THREE.SRGBColorSpace }}>
           {/* 1. Post Processing - The "Cinematic" Look */}
           <EffectComposer disableNormalPass>
@@ -715,24 +721,28 @@ export default function App() {
             <Stage isPlaying={isPlaying} setIsPlaying={setIsPlaying} />
           </Suspense>
 
-          <PointerLockControls />
+          {/* ONLY ENABLE CONTROLS IF STARTED */}
+          {hasStarted && <PointerLockControls />}
+
         </Canvas>
 
-        {/* UI Overlay */}
-        <div style={{
-          position: 'absolute', top: 40, left: 40, color: 'white',
-          fontFamily: "'Segoe UI', Roboto, sans-serif", pointerEvents: 'none',
-          textShadow: '0px 0px 10px rgba(0,255,255,0.5)'
-        }}>
-          <Reticle />
-          <h1 style={{ margin: 0, fontWeight: 300, fontSize: '2.5rem', letterSpacing: '0.2rem', textTransform: 'uppercase' }}>World End</h1>
-          <h2 style={{ margin: 0, fontWeight: 600, fontSize: '1rem', color: '#888', letterSpacing: '0.1rem' }}>DIGITAL EXHIBITION</h2>
-          <div style={{ marginTop: 20, fontSize: '0.8rem', color: '#666' }}>
-            <span style={{ border: '1px solid #444', padding: '5px 10px', borderRadius: 4 }}>WASD to Walk</span>
-            <span style={{ marginLeft: 10, border: '1px solid #444', padding: '5px 10px', borderRadius: 4 }}>Mouse to Look</span>
-            <span style={{ marginLeft: 10, border: '1px solid #444', padding: '5px 10px', borderRadius: 4 }}>Click Stand to Play MV</span>
+        {/* UI Overlay (HUD) - ONLY SHOW IF STARTED */}
+        {hasStarted && (
+          <div style={{
+            position: 'absolute', top: 40, left: 40, color: 'white',
+            fontFamily: "'Segoe UI', Roboto, sans-serif", pointerEvents: 'none',
+            textShadow: '0px 0px 10px rgba(0,255,255,0.5)'
+          }}>
+            <Reticle />
+            <h1 style={{ margin: 0, fontWeight: 300, fontSize: '2.5rem', letterSpacing: '0.2rem', textTransform: 'uppercase' }}>World End</h1>
+            <h2 style={{ margin: 0, fontWeight: 600, fontSize: '1rem', color: '#888', letterSpacing: '0.1rem' }}>DIGITAL EXHIBITION</h2>
+            <div style={{ marginTop: 20, fontSize: '0.8rem', color: '#666' }}>
+              <span style={{ border: '1px solid #444', padding: '5px 10px', borderRadius: 4 }}>WASD to Walk</span>
+              <span style={{ marginLeft: 10, border: '1px solid #444', padding: '5px 10px', borderRadius: 4 }}>Click Mouse to Look</span>
+              <span style={{ marginLeft: 10, border: '1px solid #444', padding: '5px 10px', borderRadius: 4 }}>Click Stand to Play MV</span>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </KeyboardControls>
 
