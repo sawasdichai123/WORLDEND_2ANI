@@ -4,26 +4,15 @@ import { Sparkles, SpotLight } from '@react-three/drei';
 export function EnvironmentEnhancements() {
     return (
         <group>
-            {/* 1. Global Particles (Dust/Data Motes) */}
+            {/* 1. Hallway Particles (Restricted to Hallway Z > -15) */}
             <Sparkles
                 count={500}
-                scale={[40, 20, 40]}
+                scale={[25, 20, 65]}
                 size={4}
                 speed={0.4}
                 opacity={0.5}
                 color="#00ffff"
-                position={[0, 10, 0]}
-            />
-
-            {/* 2. Secondary Particles (Floor drift) */}
-            <Sparkles
-                count={200}
-                scale={[30, 2, 30]}
-                size={2}
-                speed={0.2}
-                opacity={0.3}
-                color="#ff00ff"
-                position={[0, 1, 0]}
+                position={[0, 10, 20]}
             />
 
             {/* 3. Volumetric "God Rays" for Key Areas */}
