@@ -29,21 +29,12 @@ const Joystick = ({ onMove, label, side = "left" }) => {
         }
 
         setPosition({ x, y });
-
-        // Normalize output -1 to 1
-        // For Move: Y is inverted (Up is negative in screen, but we want positive for forward)
-        // Actually standard: Up (Screen -Y) -> Forward (+?) depends on 3D logic.
-        // Let's send raw normalized X/Y (-1 to 1) where Right is +X, Down is +Y
         onMove(x / maxRadius, y / maxRadius);
     };
 
     const handlePointerDown = (e) => {
-        e.preventDefault(); // Prevent scrolling
+        e.preventDefault();
         if (touchId.current !== null) return;
-
-        // Only accept left/right touches based on side? 
-        // Actually the container is already positioned, so just taking any touch inside it is fine.
-
         touchId.current = e.pointerId;
         containerRef.current.setPointerCapture(e.pointerId);
         setActive(true);
@@ -64,43 +55,85 @@ const Joystick = ({ onMove, label, side = "left" }) => {
         touchId.current = null;
     };
 
-    const style = {
+    // --- STYLES ---
+    const containerStyle = {
         position: 'absolute',
-        bottom: '50px',
-        [side === 'left' ? 'left' : 'right']: '50px',
-        width: '120px',
-        height: '120px',
-        background: 'rgba(255, 255, 255, 0.1)',
+        bottom: '80px',
+        [side === 'left' ? 'left' : 'right']: '40px',
+        width: '140px',
+        height: '140px',
         borderRadius: '50%',
         touchAction: 'none',
-        border: '2px solid rgba(0, 255, 255, 0.3)',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        pointerEvents: 'auto' // Ensure it captures clicks
+        pointerEvents: 'auto',
+        // Holographic Backplate
+        background: active
+            ? 'radial-gradient(circle, rgba(0, 255, 255, 0.1) 0%, transparent 70%)'
+            : 'radial-gradient(circle, rgba(0, 255, 255, 0.02) 0%, transparent 60%)',
+        border: `1px solid ${active ? 'rgba(0, 255, 255, 0.5)' : 'rgba(0, 255, 255, 0.15)'}`,
+        boxShadow: active ? '0 0 15px rgba(0, 255, 255, 0.2)' : 'none',
+        transition: 'all 0.2s ease',
+        backdropFilter: 'blur(2px)'
     };
 
     const stickStyle = {
-        width: '40px',
-        height: '40px',
-        background: active ? 'cyan' : 'rgba(0, 255, 255, 0.5)',
+        position: 'absolute',
+        width: '50px',
+        height: '50px',
         borderRadius: '50%',
         transform: `translate(${position.x}px, ${position.y}px)`,
-        transition: active ? 'none' : 'transform 0.1s ease-out',
-        boxShadow: '0 0 10px cyan'
+        transition: active ? 'none' : 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)', // Spring back
+        // Stick Look
+        background: 'rgba(0, 0, 0, 0.5)',
+        border: '2px solid cyan',
+        boxShadow: `0 0 10px cyan, inset 0 0 10px rgba(0,255,255,0.5)`,
+        zIndex: 2
     };
+
+    // Decorative Crosshair / Ticks
+    const Tick = ({ rotation }) => (
+        <div style={{
+            position: 'absolute',
+            top: '50%', left: '50%',
+            width: '100%', height: '2px',
+            transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+            pointerEvents: 'none'
+        }}>
+            <div style={{ position: 'absolute', left: '0', width: '10px', height: '100%', background: 'cyan', opacity: 0.3 }} />
+            <div style={{ position: 'absolute', right: '0', width: '10px', height: '100%', background: 'cyan', opacity: 0.3 }} />
+        </div>
+    );
 
     return (
         <div
             ref={containerRef}
-            style={style}
+            style={containerStyle}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onPointerCancel={handlePointerUp}
         >
+            {/* Visual Decor */}
+            <Tick rotation={0} />
+            <Tick rotation={90} />
+            {/* Inner Ring */}
+            <div style={{
+                position: 'absolute', width: '60%', height: '60%',
+                border: '1px dashed rgba(0,255,255,0.1)', borderRadius: '50%', pointerEvents: 'none'
+            }} />
+
+            {/* The Stick */}
             <div style={stickStyle} />
-            <div style={{ position: 'absolute', bottom: '-30px', color: 'white', fontSize: '10px', pointerEvents: 'none' }}>
+
+            {/* Label */}
+            <div style={{
+                position: 'absolute', bottom: '-25px',
+                color: 'cyan', fontSize: '10px',
+                letterSpacing: '2px', opacity: 0.8,
+                pointerEvents: 'none', textShadow: '0 0 5px cyan'
+            }}>
                 {label}
             </div>
         </div>
@@ -111,8 +144,18 @@ export function MobileControls() {
     const setJoystick = useStore((state) => state.setJoystick);
     const setJoystickLook = useStore((state) => state.setJoystickLook);
 
-    // Check if likely mobile (simplistic check, but good enough for now)
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 800;
+    // Simple Mobile Check
+    const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => {
+        const check = () => {
+            const narrow = window.innerWidth < 900;
+            const touch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            setIsMobile(narrow || touch);
+        };
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
 
     if (!isMobile) return null;
 
@@ -123,8 +166,10 @@ export function MobileControls() {
             left: 0,
             width: '100%',
             height: '100%',
-            pointerEvents: 'none', // Let clicks pass through to canvas (except joysticks)
-            zIndex: 2000
+            pointerEvents: 'none',
+            zIndex: 2000,
+            userSelect: 'none',
+            WebkitUserSelect: 'none'
         }}>
             <Joystick
                 side="left"

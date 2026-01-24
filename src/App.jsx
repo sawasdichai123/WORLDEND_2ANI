@@ -70,6 +70,9 @@ function Player() {
     if (joystickLook.x || joystickLook.y) {
       const lookSpeed = 2.0 * delta;
       state.camera.rotation.y -= joystickLook.x * lookSpeed;
+      state.camera.rotation.x -= joystickLook.y * lookSpeed;
+      // Clamp pitch to avoid flipping (approx -85 to +85 degrees)
+      state.camera.rotation.x = Math.max(-1.5, Math.min(1.5, state.camera.rotation.x));
     }
 
     // Calculate Movement Vector
@@ -883,9 +886,11 @@ export default function App() {
             textShadow: '0px 0px 10px rgba(0,255,255,0.5)'
           }}>
             <Reticle />
-            <h1 style={{ margin: 0, fontWeight: 300, fontSize: '2.5rem', letterSpacing: '0.2rem', textTransform: 'uppercase' }}>World End</h1>
-            <h2 style={{ margin: 0, fontWeight: 600, fontSize: '1rem', color: '#888', letterSpacing: '0.1rem' }}>DIGITAL EXHIBITION</h2>
-            <div style={{ marginTop: 20, fontSize: '0.8rem', color: '#666' }}>
+            <h1 style={{ margin: 0, fontWeight: 300, fontSize: '2rem', letterSpacing: '0.2rem', textTransform: 'uppercase' }}>World End</h1>
+            <h2 style={{ margin: 0, fontWeight: 600, fontSize: '0.8rem', color: '#888', letterSpacing: '0.1rem' }}>DIGITAL EXHIBITION</h2>
+
+            {/* Desktop Instructions - Hide on small screens */}
+            <div className="desktop-instructions" style={{ marginTop: 20, fontSize: '0.8rem', color: '#666', display: window.innerWidth < 900 ? 'none' : 'block' }}>
               <span style={{ border: '1px solid #444', padding: '5px 10px', borderRadius: 4 }}>WASD to Walk</span>
               <span style={{ marginLeft: 10, border: '1px solid #444', padding: '5px 10px', borderRadius: 4 }}>Click Mouse to Look</span>
               <span style={{ marginLeft: 10, border: '1px solid #444', padding: '5px 10px', borderRadius: 4 }}>Click Stand to Play MV</span>
