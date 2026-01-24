@@ -6,13 +6,19 @@ import * as THREE from 'three';
 import { EnvironmentEnhancements } from './components/EnvironmentEnhancements';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { PortraitCanvas } from './components/PortraitCanvas';
+import { useStore } from './store';
+import { MobileControls } from './components/MobileControls';
 
 
 // 1. Player Control with Collision Detection
 function Player() {
   const [, getKeys] = useKeyboardControls();
-  const speed = 0.15; // Slightly faster for better feel
+  const speed = 10.0; // Units per second (previously 0.15/frame)
   const playerRadius = 0.5; // Collision radius
+
+  // Store access
+  const joystick = useStore(state => state.joystick);
+  const joystickLook = useStore(state => state.joystickLook);
 
   // Define Obstacles (Axis-Aligned Bounding Boxes)
   // x, z = center; w, d = full width/depth
@@ -57,18 +63,37 @@ function Player() {
     return false;
   };
 
-  useFrame((state) => {
-    const { forward, backward, left, right } = getKeys();
+  useFrame((state, delta) => {
+    const { forward, backward, left, right, sprint } = getKeys();
+
+    // LOOK CONTROL (Mobile)
+    if (joystickLook.x || joystickLook.y) {
+      const lookSpeed = 2.0 * delta;
+      state.camera.rotation.y -= joystickLook.x * lookSpeed;
+    }
 
     // Calculate Movement Vector
+    const currentSpeed = speed * (sprint ? 2.5 : 1.0) * delta;
     const direction = new THREE.Vector3();
-    const frontVector = new THREE.Vector3(0, 0, Number(backward) - Number(forward));
-    const sideVector = new THREE.Vector3(Number(left) - Number(right), 0, 0);
+
+    // Joystick Y: Up is negative. We want Forward (-Z) when Up.
+    // keys: backward(1) - forward(1). 
+    // totalZ = backward - forward + joystick.y
+    const fwdInput = Number(backward) - Number(forward) + joystick.y;
+    const frontVector = new THREE.Vector3(0, 0, fwdInput);
+
+    // Joystick X: Right is positive.
+    // keys: left(1) - right(1).
+    // Logic: sideVector is "Leftness". direction = front - side.
+    // if side is (1,0,0) [Left], direction is (-1,0,0). Correct.
+    // so sideVector should include -joystick.x (Rightness)
+    const sideInput = Number(left) - Number(right) - joystick.x;
+    const sideVector = new THREE.Vector3(sideInput, 0, 0);
 
     direction
       .subVectors(frontVector, sideVector)
       .normalize()
-      .multiplyScalar(speed)
+      .multiplyScalar(currentSpeed)
       .applyEuler(state.camera.rotation);
 
     // Apply X Movement (Sliding)
@@ -128,6 +153,7 @@ function VideoDisplay({ texture, isPlaying }) {
 function Reticle() {
   const [opacity, setOpacity] = useState(0);
   const timeoutRef = useRef(null);
+  const hovered = useStore(state => state.hovered);
 
   React.useEffect(() => {
     const handleMouseMove = () => {
@@ -144,33 +170,44 @@ function Reticle() {
     };
   }, []);
 
+  // Pulse animation for hover
+  const scale = hovered ? 1.5 : 1;
+  const color = hovered ? 'cyan' : 'white';
+  const shape = hovered ? '0%' : '50%'; // Square when hovered? or just larger circle
+
   return (
     <div style={{
-      position: 'fixed', // Fixed ensures it centers to screen, not parent container
+      position: 'fixed',
       top: '50%',
       left: '50%',
-      width: '8px',
-      height: '8px',
-      backgroundColor: 'white',
-      borderRadius: '50%',
-      transform: 'translate(-50%, -50%)',
+      width: '5px',
+      height: '5px',
+      border: `1.5px solid ${color}`,
+      backgroundColor: hovered ? color : 'white',
+      borderRadius: shape,
+      transform: `translate(-50%, -50%) scale(${scale})`,
       pointerEvents: 'none',
       opacity: opacity,
-      transition: 'opacity 0.3s ease',
+      transition: 'all 0.2s ease',
       zIndex: 1000,
-      boxShadow: '0 0 4px rgba(255, 255, 255, 0.8)'
+      boxShadow: hovered ? '0 0 10px cyan' : '0 0 4px rgba(255, 255, 255, 0.8)'
     }} />
   );
 }
 
 function ControlButton({ position, label, onClick, color = "#00ffff", size = 0.15 }) {
-  const [hovered, setHover] = useState(false);
+  const [hovered, setHoverLocal] = useState(false);
+  const setGlobalHover = useStore(state => state.setHover);
+
+  const onOver = () => { setHoverLocal(true); setGlobalHover(true); };
+  const onOut = () => { setHoverLocal(false); setGlobalHover(false); };
+
   return (
     <group position={position}>
       <mesh
         onClick={(e) => { e.stopPropagation(); onClick(); }}
-        onPointerOver={() => setHover(true)}
-        onPointerOut={() => setHover(false)}
+        onPointerOver={onOver}
+        onPointerOut={onOut}
       >
         <circleGeometry args={[size, 32]} />
         <meshBasicMaterial color={hovered ? "white" : color} toneMapped={false} />
@@ -560,12 +597,16 @@ export default function App() {
         { name: 'backward', keys: ['ArrowDown', 's', 'S'] },
         { name: 'left', keys: ['ArrowLeft', 'a', 'A'] },
         { name: 'right', keys: ['ArrowRight', 'd', 'D'] },
+        { name: 'sprint', keys: ['Shift'] },
       ]}
     >
       <div style={{ width: '100vw', height: '100vh', background: 'black', overflow: 'hidden' }}>
 
+
         {/* WELCOME SCREEN OVERLAY - Always mounted for fade-out logic */}
         <WelcomeScreen started={hasStarted} onEnter={() => setHasStarted(true)} />
+        {/* MOBILE CONTROLS OVERLAY - Conditional inside component */}
+        {hasStarted && <MobileControls />}
 
         <Canvas camera={{ fov: 40, position: [0, 2, 20] }} shadows gl={{ antialias: false, toneMapping: THREE.ReinhardToneMapping, toneMappingExposure: 1.5, outputColorSpace: THREE.SRGBColorSpace }}>
           {/* 1. Post Processing - The "Cinematic" Look */}
