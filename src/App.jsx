@@ -64,6 +64,7 @@ function Player() {
   };
 
   useFrame((state, delta) => {
+    state.camera.rotation.order = 'YXZ'; // Prevent gimbal lock
     const { forward, backward, left, right, sprint } = getKeys();
 
     // LOOK CONTROL (Mobile)
@@ -591,7 +592,12 @@ function SpecialThanksBoard() {
 
 export default function App() {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [hasStarted, setHasStarted] = useState(false); // Intro State
+  const [hasStarted, setHasStarted] = useState(false);
+
+  // Simple check similar to mobile controls component
+  // Note: better to have a shared hook, but keeping it simple for now
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 900;
+
   return (
     // 3. ห่อด้วย KeyboardControls เพื่อให้ใช้ WASD ได้
     <KeyboardControls
@@ -606,10 +612,10 @@ export default function App() {
       <div style={{ width: '100vw', height: '100vh', background: 'black', overflow: 'hidden' }}>
 
 
-        {/* WELCOME SCREEN OVERLAY - Always mounted for fade-out logic */}
+        {/* WELCOME SCREEN OVERLAY */}
         <WelcomeScreen started={hasStarted} onEnter={() => setHasStarted(true)} />
-        {/* MOBILE CONTROLS OVERLAY - Conditional inside component */}
-        {hasStarted && <MobileControls />}
+        {/* MOBILE CONTROLS OVERLAY - Conditional */}
+        {hasStarted && isMobile && <MobileControls />}
 
         <Canvas camera={{ fov: 40, position: [0, 2, 20] }} shadows gl={{ antialias: false, toneMapping: THREE.ReinhardToneMapping, toneMappingExposure: 1.5, outputColorSpace: THREE.SRGBColorSpace }}>
           {/* 1. Post Processing - The "Cinematic" Look */}
@@ -873,8 +879,8 @@ export default function App() {
             <DebugObstacles />
           </Suspense>
 
-          {/* ONLY ENABLE CONTROLS IF STARTED */}
-          {hasStarted && <PointerLockControls />}
+          {/* ONLY ENABLE CONTROLS IF STARTED & Desktop */}
+          {hasStarted && !isMobile && <PointerLockControls />}
 
         </Canvas>
 
