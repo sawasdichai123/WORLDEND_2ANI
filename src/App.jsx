@@ -623,12 +623,18 @@ export default function App() {
         {/* MOBILE CONTROLS OVERLAY - Conditional */}
         {hasStarted && isMobile && <MobileControls />}
 
-        <Canvas camera={{ fov: 40, position: [0, 2, 20] }} shadows gl={{ antialias: false, toneMapping: THREE.ReinhardToneMapping, toneMappingExposure: 1.5, outputColorSpace: THREE.SRGBColorSpace }}>
-          {/* 1. Post Processing - The "Cinematic" Look */}
-          <EffectComposer disableNormalPass>
-            <Bloom luminanceThreshold={0.2} mipmapBlur intensity={1.5} radius={0.5} />
-            {/* <Vignette eskil={false} offset={0.1} darkness={1.1} /> */}
-          </EffectComposer>
+        <Canvas
+          dpr={isMobile ? 1 : [1, 2]}
+          camera={{ fov: 40, position: [0, 2, 20] }}
+          shadows={!isMobile}
+          gl={{ antialias: false, toneMapping: THREE.ReinhardToneMapping, toneMappingExposure: 1.5, outputColorSpace: THREE.SRGBColorSpace }}
+        >
+          {/* 1. Post Processing - The "Cinematic" Look (Desktop Only) */}
+          {!isMobile && (
+            <EffectComposer disableNormalPass>
+              <Bloom luminanceThreshold={0.2} mipmapBlur intensity={1.5} radius={0.5} />
+            </EffectComposer>
+          )}
 
           {/* 2. Environment & Lighting */}
           {/* HDRI for realistic reflections */}
@@ -650,22 +656,26 @@ export default function App() {
             {/* Main Hall Structure */}
 
             {/* Floor */}
-            {/* Reflective Floor */}
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+            {/* Reflective Floor (Desktop) vs Mat Function (Mobile) */}
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow={!isMobile}>
               <planeGeometry args={[50, 100]} />
-              <MeshReflectorMaterial
-                mirror={0.7}
-                blur={[500, 500]}
-                resolution={2048}
-                mixBlur={2}
-                mixStrength={60}
-                roughness={0.8}
-                depthScale={1.2}
-                minDepthThreshold={0.4}
-                maxDepthThreshold={1.4}
-                color="#101010"
-                metalness={0.6}
-              />
+              {!isMobile ? (
+                <MeshReflectorMaterial
+                  mirror={0.7}
+                  blur={[500, 500]}
+                  resolution={1024} // Reduced from 2048 for better generic performance
+                  mixBlur={2}
+                  mixStrength={60}
+                  roughness={0.8}
+                  depthScale={1.2}
+                  minDepthThreshold={0.4}
+                  maxDepthThreshold={1.4}
+                  color="#101010"
+                  metalness={0.6}
+                />
+              ) : (
+                <meshStandardMaterial color="#101010" roughness={0.5} metalness={0.5} />
+              )}
             </mesh>
 
             {/* Neon Floor Strips */}
