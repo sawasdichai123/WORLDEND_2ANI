@@ -158,21 +158,27 @@ function Reticle() {
   const [opacity, setOpacity] = useState(0);
   const timeoutRef = useRef(null);
   const hovered = useStore(state => state.hovered);
+  const joystickLook = useStore(state => state.joystickLook);
+  const joystick = useStore(state => state.joystick);
 
   React.useEffect(() => {
-    const handleMouseMove = () => {
-      setOpacity(1); // Show immediately
+    const handleAction = () => {
+      setOpacity(1);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      // Hide after 2 seconds of no movement
       timeoutRef.current = setTimeout(() => setOpacity(0), 2000);
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleAction);
+    // Also trigger on joystick change
+    if (joystickLook.x || joystickLook.y || joystick.x || joystick.y) {
+      handleAction();
+    }
+
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mousemove', handleAction);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, []);
+  }, [joystickLook, joystick]);
 
   // Pulse animation for hover
   const scale = hovered ? 1.5 : 1;
@@ -596,7 +602,7 @@ export default function App() {
 
   // Simple check similar to mobile controls component
   // Note: better to have a shared hook, but keeping it simple for now
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 900;
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 1100 || navigator.maxTouchPoints > 0;
 
   return (
     // 3. ห่อด้วย KeyboardControls เพื่อให้ใช้ WASD ได้
