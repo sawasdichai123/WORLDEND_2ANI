@@ -140,6 +140,54 @@ const Joystick = ({ onMove, label, side = "left" }) => {
     );
 };
 
+const ActionButton = () => {
+    const interactionTarget = useStore((state) => state.interactionTarget);
+    const hovered = useStore((state) => state.hovered);
+    const [pressed, setPressed] = useState(false);
+
+    const handlePress = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setPressed(true);
+        if (interactionTarget) {
+            interactionTarget();
+            // Optional: Haptic feedback
+            if (navigator.vibrate) navigator.vibrate(50);
+        }
+    };
+
+    if (!hovered) return null; // Only show when target is available
+
+    return (
+        <div
+            onPointerDown={handlePress}
+            onPointerUp={() => setPressed(false)}
+            onPointerLeave={() => setPressed(false)}
+            style={{
+                position: 'absolute',
+                bottom: '220px', // Above Look Joystick
+                right: '60px',
+                width: '80px',
+                height: '80px',
+                borderRadius: '50%',
+                background: pressed ? 'rgba(0, 255, 255, 0.4)' : 'rgba(0, 255, 255, 0.1)',
+                border: '2px solid cyan',
+                boxShadow: `0 0 ${pressed ? '20px' : '10px'} cyan`,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                pointerEvents: 'auto',
+                transition: 'all 0.1s ease',
+                backdropFilter: 'blur(4px)'
+            }}
+        >
+            <div style={{ color: 'cyan', fontSize: '12px', fontWeight: 'bold', letterSpacing: '1px' }}>
+                CLICK
+            </div>
+        </div>
+    );
+};
+
 export function MobileControls() {
     const setJoystick = useStore((state) => state.setJoystick);
     const setJoystickLook = useStore((state) => state.setJoystickLook);
@@ -148,7 +196,8 @@ export function MobileControls() {
     const [isMobile, setIsMobile] = useState(false);
     useEffect(() => {
         const check = () => {
-            const narrow = window.innerWidth < 900;
+            // Update to match App.jsx logic (include touch points)
+            const narrow = window.innerWidth < 1100;
             const touch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
             setIsMobile(narrow || touch);
         };
@@ -182,6 +231,8 @@ export function MobileControls() {
                 label="LOOK"
                 onMove={(x, y) => setJoystickLook(x, y)}
             />
+
+            <ActionButton />
         </div>
     );
 }

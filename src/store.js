@@ -12,4 +12,8 @@ export const useStore = create((set) => ({
 
     joystickLook: { x: 0, y: 0 },
     setJoystickLook: (x, y) => set({ joystickLook: { x, y } }),
+
+    // Interaction Target (for Mobile "Click")
+    interactionTarget: null,
+    setInteractionTarget: (target) => set({ interactionTarget: target }),
 }));

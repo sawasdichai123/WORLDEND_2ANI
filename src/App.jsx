@@ -1,5 +1,5 @@
 import React, { Suspense, useState, useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PointerLockControls, Sky, Text, Box, useTexture, KeyboardControls, useKeyboardControls, Environment, Text3D, MeshReflectorMaterial, useVideoTexture } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
@@ -9,6 +9,42 @@ import { PortraitCanvas } from './components/PortraitCanvas';
 import { useStore } from './store';
 import { MobileControls } from './components/MobileControls';
 
+
+// 0. Gaze Controller (Mobile Interaction)
+function GazeController({ disabled }) {
+  const { camera, scene } = typeof useThree === 'function' ? useThree() : { camera: null, scene: null };
+  // Safety check if imported correctly, but standard is `import { useThree } from '@react-three/fiber'`
+  // Check imports at top.
+  const raycaster = useRef(new THREE.Raycaster());
+  const setHover = useStore(state => state.setHover);
+  const setInteractionTarget = useStore(state => state.setInteractionTarget);
+
+  useFrame(() => {
+    if (disabled) return;
+
+    // Raycast from center of camera
+    raycaster.current.setFromCamera({ x: 0, y: 0 }, camera);
+
+    // Intersect specific layer or all? All for now, filtering by userData
+    const intersects = raycaster.current.intersectObjects(scene.children, true);
+
+    let found = false;
+    for (let hit of intersects) {
+      if (hit.object.userData && hit.object.userData.onClick) {
+        setHover(true);
+        setInteractionTarget(hit.object.userData.onClick);
+        found = true;
+        break; // Only pick the first interactive
+      }
+    }
+
+    if (!found) {
+      setHover(false);
+      setInteractionTarget(null);
+    }
+  });
+  return null;
+}
 
 // 1. Player Control with Collision Detection
 function Player() {
@@ -218,6 +254,7 @@ function ControlButton({ position, label, onClick, color = "#00ffff", size = 0.1
         onClick={(e) => { e.stopPropagation(); onClick(); }}
         onPointerOver={onOver}
         onPointerOut={onOut}
+        userData={{ onClick: onClick, label: label }} // Store handler for Gaze Raycaster
       >
         <circleGeometry args={[size, 32]} />
         <meshBasicMaterial color={hovered ? "white" : color} toneMapped={false} />
@@ -893,6 +930,9 @@ export default function App() {
 
             {/* DEBUG: Show invisible walls */}
             <DebugObstacles />
+
+            {/* Mobile Gaze Controller */}
+            {isMobile && <GazeController />}
           </Suspense>
 
           {/* ONLY ENABLE CONTROLS IF STARTED & Desktop */}
